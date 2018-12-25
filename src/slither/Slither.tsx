@@ -26,33 +26,59 @@ interface State {
     slitherSpeed: number;
 }
 
+// tslint:disable-next-line:interface-name
+interface Food {
+    size: number;
+    coords: number[][];
+    amount: number;
+}
+
+interface IMap {
+    size: number[];
+}
+
 class Test extends React.Component <{}, State> {
 
     private timerID: any
     private lastSegment: number[]
     private array: any
     private fps: number
+    private segmentSize: number
+    private food: Food
+    private gameMap: IMap
 
     constructor(props: any) {
         super(props)
 
-        this.array = [];
-        for(let i = 0; i < 50; i++) {
-            this.array.push([(window.innerWidth / 2 - 30), (window.innerHeight/2 - 30) + i*15, i])
+        this.segmentSize = 50;
+
+        this.gameMap = {
+            size: [3000, 3000]
+        }
+
+        this.food = {
+            amount: 0,
+            coords: [],
+            size: 20
         }
 
         // tslint:disable-next-line:no-console
-        // console.log(this.array)
+        console.log(this.gameMap)
+
+        this.array = [];
+        for(let i = 0; i < 50; i++) {
+            this.array.push([(window.innerWidth / 2 - this.segmentSize/2), (window.innerHeight/2 - this.segmentSize/2) + i*15, i]);
+        }
 
         this.fps = 1000 / 60; // setting FPS
 
         this.state = {
-            mouseCoords: [(window.innerWidth / 2 - 30), 0],
+            mouseCoords: [(window.innerWidth / 2 - 20), 0],
             segmentCoords: this.array,
             segmentDistance: 15,
             segmentNumber: 50,
-            segmentSize: 60,
-            slitherSpeed: 3,
+            segmentSize: this.segmentSize,
+            slitherSpeed: 4,
             slitherWeight: 500,
             windowSize: [window.innerWidth, window.innerHeight]
         }
@@ -63,18 +89,26 @@ class Test extends React.Component <{}, State> {
     }
 
     /**
-     * direction
+     * direction - changing direction toward mouse(just updating mouse coordinates)
      */
     public direction = (event: any) => {
         this.setState({
             mouseCoords: [event.clientX - this.state.segmentSize/2, event.clientY - this.state.segmentSize/2]
         })  
-        // tslint:disable-next-line:no-console
-        // console.log(this.state.mouseCoords)
     }
 
     /**
-     * addSement
+     * food - adding new food
+     */
+    public addFood() {
+
+        this.food.coords.push([Math.floor(Math.random() * (this.state.windowSize[0] - this.food.size)) + this.food.size, Math.floor(Math.random() * (this.state.windowSize[1] - this.food.size)) + this.food.size, this.food.amount])
+        this.food.amount++;
+    
+    }
+
+    /**
+     * addSement - adding new segment to slither
      */
     public addSegment() {
         this.lastSegment = this.state.segmentCoords[this.state.segmentCoords.length - 1];
@@ -85,6 +119,10 @@ class Test extends React.Component <{}, State> {
         })
     }
 
+
+    /**
+     * Here we moving our snake toward mouse
+     */
     public move() {
 
         this.array = this.state.segmentCoords;
@@ -93,16 +131,19 @@ class Test extends React.Component <{}, State> {
         // tslint:disable-next-line:prefer-const
         let k: number = this.state.slitherSpeed / (vector[0]**2 + vector[1]**2)**0.5; // coeficient for vector
 
-        this.array[0] = [this.array[0][0] + vector[0]*k, this.array[0][1] + vector[1]*k, this.array[2]]
+        this.array[0] = [this.array[0][0] + vector[0]*k, this.array[0][1] + vector[1]*k, this.array[0][2]]
+        // tslint:disable-next-line:no-console
+        console.log(this.array[0])
 
         for(let i = 1; i < this.array.length; i++) {
             
-            // k = this.state.slitherSpeed / ((this.array[i-1][0]-this.array[i][0])**2 + (this.array[i-1][1]-this.array[i][1])**2)**0.5;
             k = (((this.array[i-1][0]-this.array[i][0])**2 + (this.array[i-1][1]-this.array[i][1])**2)**0.5 - this.state.segmentDistance) / ((this.array[i-1][0]-this.array[i][0])**2 + (this.array[i-1][1]-this.array[i][1])**2)**0.5;
             this.array[i] = [
             (this.array[i-1][0]-this.array[i][0])*k + this.array[i][0],
             (this.array[i-1][1]-this.array[i][1])*k + this.array[i][1], 
             this.array[i][2]];
+            // tslint:disable-next-line:no-console
+            // console.log(this.array)
         
         }
 
@@ -110,9 +151,14 @@ class Test extends React.Component <{}, State> {
             segmentCoords: this.array
         })
 
-        // alert(k)
-        // tslint:disable-next-line:no-console
-        console.log(this.state.segmentCoords)
+        /**
+         * We are must add some food
+         * So below a code that adds food to window
+         */
+
+        if(this.food.amount < 20) {
+            this.addFood()
+        }
 
     }
 
@@ -152,7 +198,17 @@ class Test extends React.Component <{}, State> {
                     position: "absolute",
                     top: `${x[1]}px`,
                     width: `${this.state.segmentSize}px`,
-                    zIndex: -x[2]
+                    zIndex: this.state.segmentNumber - x[2] + 1
+                }} key={x[2]} />)}
+                {this.food.coords.map((x) => <div style={{
+                    backgroundColor: `rgb(${x[0] / 5}, ${x[1] / 4}, ${(x[1]+x[2]) / 7})`,
+                    border: "none",
+                    height: "20px",
+                    left: `${x[0]}px`,
+                    position: "absolute",
+                    top: `${x[1]}px`,
+                    width: "20px",
+                    zIndex: -1
                 }} key={x[2]} />)}
             </div>
         );

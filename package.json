@@ -2,12 +2,18 @@
   "name": "slither",
   "version": "0.1.0",
   "private": true,
+  "homepage": "http://AndrewFucher.github.io/Slither",
   "dependencies": {
+    "merge": "1.9.1",
+    "npm": "^6.4.1",
+    "gh-pages": "^2.0.1",
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
     "react-scripts-ts": "3.1.0"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts-ts start",
     "build": "react-scripts-ts build",
     "test": "react-scripts-ts test --env=jsdom",
