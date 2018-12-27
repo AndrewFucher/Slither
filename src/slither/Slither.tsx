@@ -1,19 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import slither_body_img_1 from 'src/images/slither_body_img_1.svg';
-/*
-let bodyArray: any[];
-// tslint:disable-next-line:prefer-const
-let bodySegmentsNumber: number = 10;
-const segmentSize: number = 30; // segment radius
-const segmentsDistance: number = segmentSize / 2;
-// tslint:disable-next-line:prefer-const
-let windowSize = [window.innerWidth, window.innerHeight];
-// tslint:disable-next-line:prefer-const
-let bodySegmentsCoords: number[][] = []; // there is MAP in wich we have coordinates of every segment of slither, so it is global coordinates
-let styleSegment: any;
-let bodyMass: number = 100;
-*/
+
 // tslint:disable-next-line:interface-name
 interface State {
     segmentCoords: number[][];
@@ -24,6 +12,7 @@ interface State {
     segmentNumber: number;
     mouseCoords: number[];
     slitherSpeed: number;
+    segmentWeigth: number;
 }
 
 // tslint:disable-next-line:interface-name
@@ -78,14 +67,31 @@ class Test extends React.Component <{}, State> {
             segmentDistance: 15,
             segmentNumber: 50,
             segmentSize: this.segmentSize,
+            segmentWeigth: 10,
             slitherSpeed: 4,
             slitherWeight: 500,
             windowSize: [window.innerWidth, window.innerHeight]
         }
 
         document.addEventListener('mousemove', this.direction);
-        document.addEventListener('over', this.direction);
+        document.addEventListener('mousedown', this.speedingSlither);
+        document.addEventListener('mouseup', this.slowingSlither)
         this.direction.bind(this)
+    }
+
+    public slowingSlither = (event: any) => {
+        this.setState({
+            slitherSpeed: 4
+        })
+    }
+
+    /**
+     * speedingSlither
+     */
+    public speedingSlither = (event: any) => {
+        this.setState({
+            slitherSpeed: 8
+        })
     }
 
     /**
@@ -102,9 +108,21 @@ class Test extends React.Component <{}, State> {
      */
     public addFood() {
 
-        this.food.coords.push([Math.floor(Math.random() * (this.state.windowSize[0] - this.food.size)) + this.food.size, Math.floor(Math.random() * (this.state.windowSize[1] - this.food.size)) + this.food.size, this.food.amount])
+        this.food.coords.push([Math.floor(Math.random() * (this.state.windowSize[0] - this.food.size)), Math.floor(Math.random() * (this.state.windowSize[1] - this.food.size)), this.food.amount])
         this.food.amount++;
     
+    }
+
+    /**
+     * deleteSegment
+     */
+    public deleteSegment() {
+        const variable = this.state.segmentCoords;
+        variable.pop();
+        this.setState({
+            segmentCoords: variable,
+            segmentNumber: this.state.segmentNumber - 1
+        })
     }
 
     /**
@@ -114,14 +132,13 @@ class Test extends React.Component <{}, State> {
         this.lastSegment = this.state.segmentCoords[this.state.segmentCoords.length - 1];
         this.setState({
             segmentCoords: this.state.segmentCoords.concat([[this.lastSegment[0], this.lastSegment[1] + this.state.segmentDistance, this.state.segmentCoords.length]]),
-            segmentNumber: this.state.segmentNumber + 1,
-            slitherWeight: this.state.slitherWeight + 10
+            segmentNumber: this.state.segmentNumber + 1
         })
     }
 
-
     /**
      * Here we moving our snake toward mouse
+     * Also here we are checking is slither ate food or no. And if it's true then adding mass
      */
     public move() {
 
@@ -132,8 +149,20 @@ class Test extends React.Component <{}, State> {
         let k: number = this.state.slitherSpeed / (vector[0]**2 + vector[1]**2)**0.5; // coeficient for vector
 
         this.array[0] = [this.array[0][0] + vector[0]*k, this.array[0][1] + vector[1]*k, this.array[0][2]]
-        // tslint:disable-next-line:no-console
-        console.log(this.array[0])
+
+        /**
+         * Checking collision of head and food
+         */
+
+        for(let i = 0; i < this.food.amount; i++) {
+            if (((this.array[0][0] - this.food.coords[i][0]) ** 2 + (this.array[0][1] - this.food.coords[i][1]) ** 2 < (this.food.size**2)*2 + (this.state.segmentSize**2))) {
+                this.food.amount--;
+                this.food.coords.splice(i, 1);
+                this.setState({
+                    slitherWeight: this.state.slitherWeight + 2
+                })
+            }
+        }
 
         for(let i = 1; i < this.array.length; i++) {
             
@@ -142,14 +171,39 @@ class Test extends React.Component <{}, State> {
             (this.array[i-1][0]-this.array[i][0])*k + this.array[i][0],
             (this.array[i-1][1]-this.array[i][1])*k + this.array[i][1], 
             this.array[i][2]];
-            // tslint:disable-next-line:no-console
-            // console.log(this.array)
         
         }
 
         this.setState({
             segmentCoords: this.array
         })
+
+    }
+
+    public update() {
+
+        /*this.setState({
+            slitherWeight: this.state.slitherWeight + 10
+        })*/
+
+        if(this.state.slitherWeight - this.state.segmentNumber * 10 >= this.state.segmentWeigth) {
+            this.addSegment()
+        }
+
+        /**
+         * If slither speed = 8( 4 - main speed ) then weight of slither must decrease
+         */
+        if(this.state.slitherSpeed > 4) {
+
+            // tslint:disable-next-line:no-console
+            console.log(this.state.slitherSpeed)
+            this.setState({
+                slitherWeight: this.state.slitherWeight - 1
+            })
+            if(this.state.slitherWeight - this.state.segmentNumber * 10 < this.state.segmentWeigth && this.state.segmentNumber >= 10) {
+                this.deleteSegment()
+            }
+        }
 
         /**
          * We are must add some food
@@ -160,16 +214,11 @@ class Test extends React.Component <{}, State> {
             this.addFood()
         }
 
-    }
-
-    public update() {
-
-        /*this.setState({
-            slitherWeight: this.state.slitherWeight + 10
-        })*/
-
-        if(this.state.slitherWeight / 10 !== this.state.segmentNumber) {
-            this.addSegment()
+        /** */
+        if(this.state.segmentNumber <= 10 && this.state.slitherSpeed > 4) {
+            {this.setState({
+                slitherSpeed: 4
+            })}
         }
 
         this.move()
@@ -191,7 +240,6 @@ class Test extends React.Component <{}, State> {
      */
     public render() {
         return (
-            // tslint:disable-next-line:jsx-no-lambda
             <div className="window" id="window">
                 {this.state.segmentCoords.map((x) => <img src={slither_body_img_1} style={{
                     left: `${x[0]}px`,
@@ -200,7 +248,7 @@ class Test extends React.Component <{}, State> {
                     width: `${this.state.segmentSize}px`,
                     zIndex: this.state.segmentNumber - x[2] + 1
                 }} key={x[2]} />)}
-                {this.food.coords.map((x) => <div style={{
+                {this.food.coords.map((x, i) => <div style={{
                     backgroundColor: `rgb(${x[0] / 5}, ${x[1] / 4}, ${(x[1]+x[2]) / 7})`,
                     border: "none",
                     height: "20px",
@@ -209,7 +257,7 @@ class Test extends React.Component <{}, State> {
                     top: `${x[1]}px`,
                     width: "20px",
                     zIndex: -1
-                }} key={x[2]} />)}
+                }} key={i} />)}
             </div>
         );
     }
