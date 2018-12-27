@@ -73,10 +73,27 @@ class Test extends React.Component <{}, State> {
             windowSize: [window.innerWidth, window.innerHeight]
         }
 
-        document.addEventListener('mousemove', this.direction);
+        document.addEventListener('mousemove', this.directionMouse);
         document.addEventListener('mousedown', this.speedingSlither);
         document.addEventListener('mouseup', this.slowingSlither)
-        this.direction.bind(this)
+        document.addEventListener("touchmove", this.directionTouch);
+        document.addEventListener("touchstart", this.directionTouch);
+        document.addEventListener('mouseover', this.directionMouse);
+        
+        // this.direction.bind(this)
+    }
+
+    public directionTouch = (event: any) => {
+        this.setState({
+            mouseCoords: [event.targetTouches[0].clientX - this.state.segmentSize/2, event.targetTouches[0].clientY - this.state.segmentSize/2]
+        })
+
+        /*if (event.targetTouches.length == 1) {
+        var touch = event.targetTouches[0];
+        // Place element where the finger is
+        obj.style.left = touch.pageX + 'px';
+        obj.style.top = touch.pageY + 'px';
+        */
     }
 
     public slowingSlither = (event: any) => {
@@ -97,7 +114,7 @@ class Test extends React.Component <{}, State> {
     /**
      * direction - changing direction toward mouse(just updating mouse coordinates)
      */
-    public direction = (event: any) => {
+    public directionMouse = (event: any) => {
         this.setState({
             mouseCoords: [event.clientX - this.state.segmentSize/2, event.clientY - this.state.segmentSize/2]
         })  
@@ -198,7 +215,7 @@ class Test extends React.Component <{}, State> {
             // tslint:disable-next-line:no-console
             console.log(this.state.slitherSpeed)
             this.setState({
-                slitherWeight: this.state.slitherWeight - 1
+                slitherWeight: this.state.slitherWeight - 0.5
             })
             if(this.state.slitherWeight - this.state.segmentNumber * 10 < this.state.segmentWeigth && this.state.segmentNumber >= 10) {
                 this.deleteSegment()
