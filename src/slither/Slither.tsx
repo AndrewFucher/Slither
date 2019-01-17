@@ -3,6 +3,10 @@ import * as ReactDOM from 'react-dom';
 import bg from 'src/images/bg.jpg';
 import slither_body_img_1 from 'src/images/slither_body_img_1.svg';
 
+let context: CanvasRenderingContext2D;
+let canvas: any;
+
+
 // tslint:disable-next-line:interface-name
 interface SlitherSpeed {
     normal: number;
@@ -60,6 +64,9 @@ class Test extends React.Component <{}, State> {
     private backGround: Background
     private speed: SlitherSpeed
     private windowSize: WindowSize
+    private bgImage: any
+    private slitherImage: HTMLImageElement;
+    // private canvas: any
 
     constructor(props: any) {
         super(props)
@@ -107,6 +114,18 @@ class Test extends React.Component <{}, State> {
         }
 
         this.fps = 1000 / 60; // setting FPS
+        // tslint:disable-next-line:no-console
+        console.log(this.fps);
+
+        this.slitherImage = new Image();
+        this.slitherImage.src = slither_body_img_1;
+
+        this.bgImage = new Image();
+        this.bgImage.src = bg;
+
+        /**
+         * Slither proporties
+         */
 
         this.state = {
             headVector: [1, 1],
@@ -333,7 +352,29 @@ class Test extends React.Component <{}, State> {
 
     }
 
+    public drawbg() {
+        // tslint:disable-next-line:prefer-for-of
+        for(let i = 0; i < this.backGround.coords.length; i++) {
+            context.drawImage(this.bgImage, this.backGround.coords[i][0], this.backGround.coords[i][1])
+        }
+    }
+
+    /**
+     * draw slither
+     */
+    public drawSlither() {
+        context.scale(0.65, 0.65);
+        for(let i = this.state.segmentNumber - 1; i > -1; i--) {
+            context.drawImage(this.slitherImage, this.state.segmentCoords[i][0] * 100/65, this.state.segmentCoords[i][1] * 100/65)
+        }
+        context.scale(100/65, 100/65);
+    }
+
     public update() {
+
+        context.clearRect(0, 0, this.windowSize.windowSize[0], this.windowSize.windowSize[1]);
+
+        context.drawImage(this.bgImage, 0, 0);
 
         // Checking if size of the player`s window hase changed
         if (this.windowSize.windowSize[0] !== window.innerWidth || this.windowSize.windowSize[1] !== window.innerHeight) {
@@ -377,13 +418,27 @@ class Test extends React.Component <{}, State> {
         }
 
         this.move()
+        
+        this.drawbg();
+        this.drawSlither();
+
+        window.requestAnimationFrame(() => this.update());
 
     }
 
     public componentDidMount() {
-        this.timerID = setInterval(
+
+        /*this.timerID = setInterval(
             () => this.update(), this.fps
-        )
+        )*/
+
+        canvas = this.refs.canvas;
+        context = canvas.getContext('2d');
+
+        context.drawImage(this.slitherImage, 0, 0);
+        context.clearRect(0, 0, -1, -1);
+
+        window.requestAnimationFrame(() => this.update());
     }
 
     public componentWillUnmount() {
@@ -395,43 +450,19 @@ class Test extends React.Component <{}, State> {
      */
     public render() {
         return (
-            <div className="window" id="window" style={{overflow: "hidden"}}>
-                <div style={{
-                    backgroundColor: "red",
-                    height: "50px",
-                    left: "-50px",
-                    position: "absolute",
-                    width: "50px"
-                }} />
-                {this.backGround.coords.map((x, i) => <img src={this.backGround.image} style={{
-                    left: `${x[0]}px`,
-                    position: "absolute",
-                    top: `${x[1]}px`,
-                    zIndex: -2
-                }} key={i}/>)}
-                {this.state.segmentCoords.map((x, i) => <img src={slither_body_img_1} style={{
-                    left: `${x[0]}px`,
-                    position: "absolute",
-                    top: `${x[1]}px`,
-                    width: `${this.state.segmentSize}px`,
-                    zIndex: this.state.segmentNumber - i
-                }} key={i} />)}
-                {this.food.coords.map((x, i) => <div style={{
-                    backgroundColor: `rgb(${x[0] / 5}, ${x[1] / 4}, ${(x[1]+x[2]) / 7})`,
-                    border: "none",
-                    height: "20px",
-                    left: `${x[0]}px`,
-                    position: "absolute",
-                    top: `${x[1]}px`,
-                    width: "20px",
-                    zIndex: -1
-                }} key={i} />)}
-            </div>
+            // tslint:disable-next-line:jsx-no-string-ref
+            <canvas id="game_window" width={String(this.windowSize.windowSize[0])} height={String(this.windowSize.windowSize[1])} ref="canvas" />
         );
     }
 }
 
 function start() {
+
+    /*canvas = (document.getElementById('game_window') as HTMLCanvasElement);
+    context = canvas.getContext("2d") as CanvasRenderingContext2D;
+    context.fillStyle = "red";
+    context.fillRect(0, 0, 500, 500);*/
+
     ReactDOM.render(
         <Test />,
         document.getElementById('root')
