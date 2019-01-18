@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import bg from 'src/images/bg.jpg';
+import foodImage from 'src/images/food.png';
 import slither_body_img_1 from 'src/images/slither_body_img_1.svg';
 
 let context: CanvasRenderingContext2D;
@@ -47,11 +48,6 @@ interface Food {
     amount: number;
 }
 
-// tslint:disable-next-line:interface-name
-interface Map {
-    size: number[];
-}
-
 class Test extends React.Component <{}, State> {
 
     private timerID: any
@@ -60,13 +56,12 @@ class Test extends React.Component <{}, State> {
     private fps: number
     private segmentSize: number
     private food: Food
-    private gameMap: Map
     private backGround: Background
     private speed: SlitherSpeed
     private windowSize: WindowSize
     private bgImage: any
-    private slitherImage: HTMLImageElement;
-    // private canvas: any
+    private slitherImage: HTMLImageElement
+    private foodImage: HTMLImageElement
 
     constructor(props: any) {
         super(props)
@@ -95,18 +90,11 @@ class Test extends React.Component <{}, State> {
 
         this.segmentSize = 50;
 
-        this.gameMap = {
-            size: [3000, 3000]
-        }
-
         this.food = {
             amount: 0,
             coords: [],
             size: 20
         }
-
-        // tslint:disable-next-line:no-console
-        console.log(this.gameMap, bg.size)
 
         this.array = [];
         for(let i = 0; i < 50; i++) {
@@ -116,6 +104,10 @@ class Test extends React.Component <{}, State> {
         this.fps = 1000 / 60; // setting FPS
         // tslint:disable-next-line:no-console
         console.log(this.fps);
+
+        // Importing images
+        this.foodImage = new Image();
+        this.foodImage.src = foodImage;
 
         this.slitherImage = new Image();
         this.slitherImage.src = slither_body_img_1;
@@ -229,10 +221,11 @@ class Test extends React.Component <{}, State> {
      * movebg - moving background
      */
     public movebg(vx: number, vy: number) {
+
+        // vx, vy - coords where moved head of slither
+
         let kx: number = 0;
         let ky: number = 0;
-        // vx = Math.round(vx);
-        // vy = Math.round(vy);
 
         const firstbg = this.backGround.coords[0];
 
@@ -263,8 +256,9 @@ class Test extends React.Component <{}, State> {
      * moveFood
      */
     public moveFood(vx: number, vy: number) {
-        // vx = Math.round(vx);
-        // vy = Math.round(vy);
+
+        // vx, vy - coords where moved head of slither
+
         let i: number = 0;
         let j: boolean = true;
         while(j !== false) {
@@ -274,13 +268,25 @@ class Test extends React.Component <{}, State> {
                 this.food.coords[i][1] > this.windowSize.windowSize[1] ||
                 this.food.coords[i][1] < 0) {
                     this.food.coords.splice(i, 1);
-                    j = false;
+                    i--
                     this.food.amount--;
                     this.addFood();
             }
             i++;
             if (i >= this.food.amount) {
                 j = false;
+            }
+        }
+    }
+
+    public foodCollision() {
+        for(let i = 0; i < this.food.amount; i++) {
+            if (((this.array[0][0] - this.food.coords[i][0]) ** 2 + (this.array[0][1] - this.food.coords[i][1]) ** 2 < (this.food.size**2)*2 + (this.state.segmentSize**2))) {
+                this.food.amount--;
+                this.food.coords.splice(i, 1);
+                this.setState({
+                    slitherWeight: this.state.slitherWeight + 2
+                })
             }
         }
     }
@@ -306,27 +312,7 @@ class Test extends React.Component <{}, State> {
         }
         const kHead = k; // coeficient for head of snake
 
-        // moving background
-        this.movebg(this.state.headVector[0], this.state.headVector[1]);
-
-        // moving food
-        this.moveFood(this.state.headVector[0], this.state.headVector[1]);
-
         this.array[0] = [this.array[0][0] + this.state.headVector[0], this.array[0][1] + this.state.headVector[1]]
-
-        /**
-         * Checking collision of head and food
-         */
-
-        for(let i = 0; i < this.food.amount; i++) {
-            if (((this.array[0][0] - this.food.coords[i][0]) ** 2 + (this.array[0][1] - this.food.coords[i][1]) ** 2 < (this.food.size**2)*2 + (this.state.segmentSize**2))) {
-                this.food.amount--;
-                this.food.coords.splice(i, 1);
-                this.setState({
-                    slitherWeight: this.state.slitherWeight + 2
-                })
-            }
-        }
 
         /**
          * Moving body of slither
@@ -352,6 +338,18 @@ class Test extends React.Component <{}, State> {
 
     }
 
+    /**
+     * draw background
+     */
+    public drawFood() {
+        for(let i = 0; i < this.food.amount; i++) {
+            context.drawImage(this.foodImage, this.food.coords[i][0], this.food.coords[i][1])
+        }
+    }
+
+    /**
+     * draw background
+     */
     public drawbg() {
         // tslint:disable-next-line:prefer-for-of
         for(let i = 0; i < this.backGround.coords.length; i++) {
@@ -417,10 +415,25 @@ class Test extends React.Component <{}, State> {
             })}
         }
 
-        this.move()
+        /**
+         * Checking collision of head and food
+         */
+
+        this.foodCollision();
+
+        // moving slither/snake
+        this.move();
+
+        // moving food
+        this.moveFood(this.state.headVector[0], this.state.headVector[1]);
+
+        // moving background
+        this.movebg(this.state.headVector[0], this.state.headVector[1]);
         
-        this.drawbg();
-        this.drawSlither();
+        // drawing everything
+        this.drawbg(); // background
+        this.drawFood() // food
+        this.drawSlither(); // slither/snake
 
         window.requestAnimationFrame(() => this.update());
 
