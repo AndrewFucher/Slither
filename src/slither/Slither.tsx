@@ -20,8 +20,9 @@ interface SlitherSpeed {
 
 // tslint:disable-next-line:interface-name
 interface WindowSize {
-    originalWindowSize: number[]
+    originalWindowSize: number[];
     windowSize: number[];
+    coeficient: number;
 }
 
 // tslint:disable-next-line:interface-name
@@ -55,10 +56,8 @@ interface Food {
 
 class Test extends React.Component <{}, State> {
 
-    private timerID: any
     private lastSegment: number[]
     private array: any // this array i use for everything. Just need it
-    private fps: number
     private segmentSize: number
     private food: Food
     private backGround: Background
@@ -107,14 +106,16 @@ class Test extends React.Component <{}, State> {
             size: 20
         }
 
-        this.array = [];
-        for(let i = 0; i < 50; i++) {
-            this.array.push([(window.innerWidth / 2 - this.segmentSize/2), (window.innerHeight/2 - this.segmentSize/2) + i*15]);
+        this.windowSize = {
+            coeficient: Math.max(window.innerWidth / 1850, window.innerHeight / 1010),
+            originalWindowSize: [1850, 1010],
+            windowSize: [window.innerWidth, window.innerHeight]
         }
 
-        this.fps = 1000 / 60; // setting FPS
-        // tslint:disable-next-line:no-console
-        console.log(this.fps);
+        this.array = [];
+        for(let i = 0; i < 50; i++) {
+            this.array.push([(window.innerWidth / 2 - this.segmentSize/2) / this.windowSize.coeficient, ((window.innerHeight/2 - this.segmentSize/2) + i*15) / this.windowSize.coeficient]);
+        }
 
         // Importing images
         this.foodImage = new Image();
@@ -142,10 +143,6 @@ class Test extends React.Component <{}, State> {
             slitherWeight: 500
         }
 
-        this.windowSize = {
-            originalWindowSize: [window.innerWidth, window.innerHeight],
-            windowSize: [window.innerWidth, window.innerHeight]
-        }
 
         // connecting every single controler for mouse( moving, speeding etc. )
         document.addEventListener('mousemove', this.directionMouse);
@@ -163,9 +160,8 @@ class Test extends React.Component <{}, State> {
      * Adding control to smartphones
      */
     public directionTouch = (event: any) => {
-        event.preventDefault();
         this.setState({
-            mouseCoords: [event.targetTouches[0].clientX - this.state.segmentSize/2, event.targetTouches[0].clientY - this.state.segmentSize/2]
+            mouseCoords: [(event.targetTouches[0].clientX - this.state.segmentSize/2) / this.windowSize.coeficient, (event.targetTouches[0].clientY - this.state.segmentSize/2) / this.windowSize.coeficient]
         })
     }
 
@@ -192,7 +188,7 @@ class Test extends React.Component <{}, State> {
     public directionMouse = (event: any) => {
         event.preventDefault()
         this.setState({
-            mouseCoords: [event.clientX - this.state.segmentSize/2, event.clientY - this.state.segmentSize/2]
+            mouseCoords: [(event.clientX - this.state.segmentSize/2) / this.windowSize.coeficient, (event.clientY - this.state.segmentSize / 2) / this.windowSize.coeficient]
         })  
     }
 
@@ -398,6 +394,7 @@ class Test extends React.Component <{}, State> {
 
         // Checking if size of the player`s window hase changed
         if (this.windowSize.windowSize[0] !== window.innerWidth || this.windowSize.windowSize[1] !== window.innerHeight) {
+            
             this.windowSize.windowSize = [window.innerWidth, window.innerHeight];
         }
 
@@ -459,10 +456,6 @@ class Test extends React.Component <{}, State> {
 
     public componentDidMount() {
 
-        /*this.timerID = setInterval(
-            () => this.update(), this.fps
-        )*/
-
         // tslint:disable-next-line:no-console
         console.log(this.mapMap);
 
@@ -472,11 +465,9 @@ class Test extends React.Component <{}, State> {
         context.drawImage(this.slitherImage, 0, 0);
         context.clearRect(0, 0, -1, -1);
 
-        window.requestAnimationFrame(() => this.update());
-    }
+        context.scale(this.windowSize.coeficient, this.windowSize.coeficient);
 
-    public componentWillUnmount() {
-        clearInterval(this.timerID)
+        window.requestAnimationFrame(() => this.update());
     }
 
     /**
@@ -491,12 +482,6 @@ class Test extends React.Component <{}, State> {
 }
 
 function start() {
-
-    /*canvas = (document.getElementById('game_window') as HTMLCanvasElement);
-    context = canvas.getContext("2d") as CanvasRenderingContext2D;
-    context.fillStyle = "red";
-    context.fillRect(0, 0, 500, 500);*/
-
     ReactDOM.render(
         <Test />,
         document.getElementById('root')
