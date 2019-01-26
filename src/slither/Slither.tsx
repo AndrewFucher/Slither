@@ -7,6 +7,10 @@ import slither_body_img_1 from 'src/images/slither_body_img_1.svg';
 let context: CanvasRenderingContext2D;
 let canvas: any;
 
+// tslint:disable-next-line:interface-name
+interface Map {
+    size: number[];
+}
 
 // tslint:disable-next-line:interface-name
 interface SlitherSpeed {
@@ -46,6 +50,7 @@ interface Food {
     size: number;
     coords: number[][];
     amount: number;
+    maxAmount: number;
 }
 
 class Test extends React.Component <{}, State> {
@@ -62,6 +67,7 @@ class Test extends React.Component <{}, State> {
     private bgImage: any
     private slitherImage: HTMLImageElement
     private foodImage: HTMLImageElement
+    private mapMap: Map;
 
     constructor(props: any) {
         super(props)
@@ -73,6 +79,10 @@ class Test extends React.Component <{}, State> {
         this.speed = {
             fast: 8,
             normal: 4
+        }
+
+        this.mapMap = {
+            size: [3000, 3000]
         }
 
         this.backGround = {
@@ -93,6 +103,7 @@ class Test extends React.Component <{}, State> {
         this.food = {
             amount: 0,
             coords: [],
+            maxAmount: 200,
             size: 20
         }
 
@@ -136,13 +147,14 @@ class Test extends React.Component <{}, State> {
             windowSize: [window.innerWidth, window.innerHeight]
         }
 
-        // connecting evyry single controler for mouse( moving, speeding etc. )
+        // connecting every single controler for mouse( moving, speeding etc. )
         document.addEventListener('mousemove', this.directionMouse);
         document.addEventListener('mousedown', this.speedingSlither);
-        document.addEventListener('mouseup', this.slowingSlither)
-        document.addEventListener("touchmove", this.directionTouch);
-        document.addEventListener("touchstart", this.directionTouch);
+        document.addEventListener('mouseup', this.slowingSlither);
+        document.addEventListener('touchmove', this.directionTouch);
+        document.addEventListener('touchstart', this.directionTouch);
         document.addEventListener('mouseover', this.directionMouse);
+        // document.addEventListener('dblclick', this.speedingSlither);
         
         // this.direction.bind(this)
     }
@@ -189,7 +201,11 @@ class Test extends React.Component <{}, State> {
      */
     public addFood() {
 
-        this.food.coords.push([Math.floor(Math.random() * (this.windowSize.windowSize[0] - this.food.size)), Math.floor(Math.random() * (this.windowSize.windowSize[1] - this.food.size)), this.food.amount])
+        this.food.coords.push([
+            Math.floor(Math.random() * (this.mapMap.size[0] * 2)) - this.mapMap.size[0],
+            Math.floor(Math.random() * (this.mapMap.size[1] * 2)) - this.mapMap.size[1],
+            this.food.amount]
+        )
         this.food.amount++;
     
     }
@@ -263,10 +279,10 @@ class Test extends React.Component <{}, State> {
         let j: boolean = true;
         while(j !== false) {
             this.food.coords[i] = [this.food.coords[i][0] - vx, this.food.coords[i][1] - vy];
-            if (this.food.coords[i][0] > this.windowSize.windowSize[0] ||
-                this.food.coords[i][0] < 0 ||
-                this.food.coords[i][1] > this.windowSize.windowSize[1] ||
-                this.food.coords[i][1] < 0) {
+            if (this.food.coords[i][0] > this.mapMap.size[0] ||
+                this.food.coords[i][0] < -this.mapMap.size[0] ||
+                this.food.coords[i][1] > this.mapMap.size[1] ||
+                this.food.coords[i][1] < -this.mapMap.size[1]) {
                     this.food.coords.splice(i, 1);
                     i--
                     this.food.amount--;
@@ -343,7 +359,13 @@ class Test extends React.Component <{}, State> {
      */
     public drawFood() {
         for(let i = 0; i < this.food.amount; i++) {
-            context.drawImage(this.foodImage, this.food.coords[i][0], this.food.coords[i][1])
+                if (this.food.coords[i][0] >= -this.mapMap.size[0] && 
+                    this.mapMap.size[0] >= this.food.coords[i][0] && 
+                    this.food.coords[i][1] >= -this.mapMap.size[1] && 
+                    this.mapMap.size[1] >= this.food.coords[i][1]
+                    ) {
+                context.drawImage(this.foodImage, this.food.coords[i][0], this.food.coords[i][1])
+            }
         }
     }
 
@@ -402,7 +424,7 @@ class Test extends React.Component <{}, State> {
          * So below a code that adds food to window
          */
 
-        if (this.food.amount < 20) {
+        if (this.food.amount < this.food.maxAmount) {
             this.addFood()
         }
 
@@ -421,14 +443,10 @@ class Test extends React.Component <{}, State> {
 
         this.foodCollision();
 
-        // moving slither/snake
-        this.move();
-
-        // moving food
-        this.moveFood(this.state.headVector[0], this.state.headVector[1]);
-
-        // moving background
-        this.movebg(this.state.headVector[0], this.state.headVector[1]);
+        // moving
+        this.move(); // moving slither/snake
+        this.moveFood(this.state.headVector[0], this.state.headVector[1]); // moving food
+        this.movebg(this.state.headVector[0], this.state.headVector[1]); // moving background
         
         // drawing everything
         this.drawbg(); // background
@@ -444,6 +462,9 @@ class Test extends React.Component <{}, State> {
         /*this.timerID = setInterval(
             () => this.update(), this.fps
         )*/
+
+        // tslint:disable-next-line:no-console
+        console.log(this.mapMap);
 
         canvas = this.refs.canvas;
         context = canvas.getContext('2d');
